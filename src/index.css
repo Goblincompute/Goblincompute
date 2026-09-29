@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-term-black: #050805;
+    --color-term-green: #60FF70;
+    --color-term-green-sec: #20C95A;
+    --color-term-green-dark: #123B17;
+    --color-term-green-muted: #688D6C;
+  }
+}
+
+/* Custom Font utility classes */
+.font-pixel {
+  font-family: 'Press Start 2P', cursive, monospace;
+}
+
+.font-terminal {
+  font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+}
+
+.font-vt {
+  font-family: 'VT323', monospace;
+}
+
+/* Retro CRT Scanlines Effect */
+.crt-overlay {
+  position: relative;
+}
+
+.crt-overlay::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 50;
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Terminal Screen Glow */
+.crt-glow {
+  text-shadow: 0 0 4px rgba(96, 255, 112, 0.4), 0 0 10px rgba(96, 255, 112, 0.2);
+}
+
+.box-glow {
+  box-shadow: 0 0 10px rgba(96, 255, 112, 0.15), inset 0 0 10px rgba(96, 255, 112, 0.05);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #050805;
+  border-left: 1px solid #123B17;
+}
+::-webkit-scrollbar-thumb {
+  background: #20C95A;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #60FF70;
+}
+
+/* Pixel Flicker & Blinking Animations */
+@keyframes cursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: cursorBlink 1s infinite;
+}
+
+@keyframes goblinFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-goblin-idle {
+  animation: goblinFloat 3s ease-in-out infinite;
+}
+
+@keyframes pixelFlicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.85; }
+  94% { opacity: 1; }
+  98% { opacity: 0.9; }
+  99% { opacity: 1; }
+}
+
+.animate-crt-flicker {
+  animation: pixelFlicker 4s infinite;
+}
