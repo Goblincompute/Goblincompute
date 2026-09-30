@@ -142,6 +142,20 @@ export const ComputePage: React.FC<ComputePageProps> = ({
     );
   }
 
+  // Initial Loading State for Holder Verification
+  if (holderStatus.loading && holderStatus.tokenBalance === null) {
+    return (
+      <div className="w-full min-h-[calc(100vh-65px)] p-6 md:p-12 font-mono select-none flex flex-col items-center justify-center space-y-6 max-w-xl mx-auto text-center my-auto">
+        <div className="p-6 border border-[#60FF70]/50 bg-[#050805] box-glow w-full space-y-4">
+          <div className="text-lg font-pixel text-[#60FF70]">&gt; CHECKING HOLDER STATUS...</div>
+          <p className="text-xs text-[#688D6C]">
+            Verifying GBLC token balance on Robinhood Chain Mainnet (4663)...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Holder Verification Access Protection
   if (!holderStatus.isHolder) {
     return (

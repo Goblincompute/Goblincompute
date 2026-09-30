@@ -73,9 +73,10 @@ export const Cave: React.FC<CaveProps> = ({
   const getStatusText = () => {
     if (!isConnected) return 'SLEEPING';
     if (!isCorrectNetwork) return 'WRONG NETWORK';
-    if (!holderStatus.isHolder) return 'NOT AUTHORIZED';
-    if (isActivated) return 'ACTIVE';
-    return 'READY';
+    if (holderStatus.loading && holderStatus.tokenBalance === null) return 'CHECKING...';
+    if (holderStatus.isHolder) return isActivated ? 'ACTIVE' : 'READY';
+    if (holderStatus.tokenBalance === 0n) return 'NOT AUTHORIZED';
+    return 'CHECKING...';
   };
 
   return (
@@ -112,8 +113,10 @@ export const Cave: React.FC<CaveProps> = ({
                 <span className={
                   !isConnected ? "text-[#688D6C]" :
                   !isCorrectNetwork ? "text-amber-400 font-bold" :
-                  !holderStatus.isHolder ? "text-red-400 font-bold" :
-                  isActivated ? "text-[#60FF70] font-bold" : "text-[#60FF70]"
+                  (holderStatus.loading && holderStatus.tokenBalance === null) ? "text-amber-400 font-bold" :
+                  holderStatus.isHolder ? "text-[#60FF70] font-bold" :
+                  holderStatus.tokenBalance === 0n ? "text-red-400 font-bold" :
+                  "text-amber-400 font-bold"
                 }>
                   [ {getStatusText()} ]
                 </span>
@@ -147,16 +150,28 @@ export const Cave: React.FC<CaveProps> = ({
                 <span className="text-[#688D6C]">HOLDER ACCESS</span>
                 <span className={
                   !isConnected ? "text-[#688D6C]" :
-                  holderStatus.loading ? "text-amber-400" :
-                  holderStatus.isHolder ? "text-[#60FF70] font-bold" : "text-red-400 font-bold"
+                  (holderStatus.loading && holderStatus.tokenBalance === null) ? "text-amber-400 font-bold" :
+                  holderStatus.isHolder ? "text-[#60FF70] font-bold" :
+                  holderStatus.tokenBalance === 0n ? "text-red-400 font-bold" :
+                  "text-amber-400 font-bold"
                 }>
-                  [ {!isConnected ? 'NOT CONNECTED' : holderStatus.loading ? 'CHECKING...' : holderStatus.isHolder ? 'AUTHORIZED' : 'NOT AUTHORIZED'} ]
+                  [ {
+                    !isConnected ? 'NOT CONNECTED' :
+                    (holderStatus.loading && holderStatus.tokenBalance === null) ? 'CHECKING...' :
+                    holderStatus.isHolder ? 'AUTHORIZED' :
+                    holderStatus.tokenBalance === 0n ? 'NOT AUTHORIZED' :
+                    'VERIFYING...'
+                  } ]
                 </span>
               </div>
               {isConnected && (
                 <div className="flex justify-between border-b border-[#60FF70]/20 pb-1">
                   <span className="text-[#688D6C]">GBLC BALANCE</span>
-                  <span className={holderStatus.isHolder ? "text-[#60FF70] font-bold" : "text-amber-400"}>
+                  <span className={
+                    (holderStatus.loading && holderStatus.tokenBalance === null) ? "text-amber-400 font-bold" :
+                    holderStatus.isHolder ? "text-[#60FF70] font-bold" :
+                    "text-amber-400 font-bold"
+                  }>
                     {holderStatus.formattedTokenBalance}
                   </span>
                 </div>
@@ -166,9 +181,12 @@ export const Cave: React.FC<CaveProps> = ({
                   <div>&gt; HOLDER VERIFIED</div>
                   <div>&gt; COMPUTE ACCESS ENABLED</div>
                   <div>&gt; ALLOWANCE: {holderStatus.allowance} CR</div>
+                  {holderStatus.error && (
+                    <div className="text-amber-400 text-[10px] pt-0.5">&gt; NETWORK CHECK RETRYING...</div>
+                  )}
                 </div>
               )}
-              {isConnected && !holderStatus.isHolder && !holderStatus.loading && (
+              {isConnected && !holderStatus.isHolder && !holderStatus.loading && holderStatus.tokenBalance === 0n && (
                 <div className="text-[11px] text-red-400 space-y-0.5 pt-0.5">
                   <div>&gt; ACCESS DENIED</div>
                   <div>&gt; GBLC HOLDER REQUIRED</div>
@@ -276,6 +294,8 @@ export const Cave: React.FC<CaveProps> = ({
                 ? 'CONNECT WALLET TO START SESSION'
                 : !isCorrectNetwork
                 ? 'SWITCH TO ROBINHOOD CHAIN'
+                : (holderStatus.loading && holderStatus.tokenBalance === null)
+                ? 'CHECKING HOLDER STATUS...'
                 : !holderStatus.isHolder
                 ? 'HOLDER VERIFICATION REQUIRED'
                 : !isActivated
@@ -288,6 +308,8 @@ export const Cave: React.FC<CaveProps> = ({
               ? 'Connect your Web3 wallet to verify network and start session.'
               : !isCorrectNetwork
               ? 'Switch your active chain to Robinhood Chain (ID: 4663).'
+              : (holderStatus.loading && holderStatus.tokenBalance === null)
+              ? 'Verifying GBLC token balance on Robinhood Chain Mainnet (4663)...'
               : !holderStatus.isHolder
               ? 'Wallet is not authorized as a verified token holder. Compute access denied.'
               : !isActivated
@@ -310,6 +332,13 @@ export const Cave: React.FC<CaveProps> = ({
               onClick={() => switchChain({ chainId: ROBINHOOD_CHAIN_ID })}
             >
               [ SWITCH TO ROBINHOOD CHAIN ]
+            </TerminalButton>
+          ) : (holderStatus.loading && holderStatus.tokenBalance === null) ? (
+            <TerminalButton
+              variant="outline"
+              disabled={true}
+            >
+              [ CHECKING... ]
             </TerminalButton>
           ) : !holderStatus.isHolder ? (
             <TerminalButton
