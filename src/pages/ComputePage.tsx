@@ -148,9 +148,9 @@ export const ComputePage: React.FC<ComputePageProps> = ({
       <div className="w-full min-h-[calc(100vh-65px)] p-6 md:p-12 font-mono select-none flex flex-col items-center justify-center space-y-6 max-w-xl mx-auto text-center my-auto">
         <div className="p-6 border border-red-500 bg-[#050805] box-glow w-full space-y-4">
           <div className="text-lg font-pixel text-red-500">&gt; ACCESS DENIED</div>
-          <div className="text-xs font-bold text-red-400 tracking-wider">&gt; HOLDER VERIFICATION REQUIRED</div>
+          <div className="text-xs font-bold text-red-400 tracking-wider">&gt; GBLC HOLDER VERIFICATION REQUIRED</div>
           <p className="text-xs text-[#688D6C]">
-            Goblin Compute access is restricted to verified token holders and authorized testers.
+            Goblin Compute access is restricted to verified GBLC token holders on Robinhood Chain Mainnet (4663).
           </p>
           <div className="pt-2 flex justify-center gap-3">
             <TerminalButton variant="primary" onClick={() => onNavigate('/cave')}>

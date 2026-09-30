@@ -153,6 +153,14 @@ export const Cave: React.FC<CaveProps> = ({
                   [ {!isConnected ? 'NOT CONNECTED' : holderStatus.loading ? 'CHECKING...' : holderStatus.isHolder ? 'AUTHORIZED' : 'NOT AUTHORIZED'} ]
                 </span>
               </div>
+              {isConnected && (
+                <div className="flex justify-between border-b border-[#60FF70]/20 pb-1">
+                  <span className="text-[#688D6C]">GBLC BALANCE</span>
+                  <span className={holderStatus.isHolder ? "text-[#60FF70] font-bold" : "text-amber-400"}>
+                    {holderStatus.formattedTokenBalance}
+                  </span>
+                </div>
+              )}
               {isConnected && holderStatus.isHolder && (
                 <div className="text-[11px] text-[#60FF70] space-y-0.5 pt-0.5">
                   <div>&gt; HOLDER VERIFIED</div>
@@ -163,7 +171,7 @@ export const Cave: React.FC<CaveProps> = ({
               {isConnected && !holderStatus.isHolder && !holderStatus.loading && (
                 <div className="text-[11px] text-red-400 space-y-0.5 pt-0.5">
                   <div>&gt; ACCESS DENIED</div>
-                  <div>&gt; HOLDER REQUIRED</div>
+                  <div>&gt; GBLC HOLDER REQUIRED</div>
                 </div>
               )}
             </div>
