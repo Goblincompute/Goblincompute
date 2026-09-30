@@ -28,12 +28,27 @@ const erc20Abi = parseAbi([
   'function decimals() view returns (uint8)',
 ]);
 
+// Persistent module-level cache to preserve verified holder balance across route navigation
+let globalConfirmedAddress: string | null = null;
+let globalConfirmedBalance: bigint | null = null;
+let globalConfirmedHolder: boolean | null = null;
+
 export function useHolderStatus(): HolderStatusResult {
   const { address, isConnected } = useAccount();
 
-  // Stable confirmed balance state to prevent 0-balance refetch flicker
-  const [confirmedBalance, setConfirmedBalance] = useState<bigint | null>(null);
-  const [confirmedHolder, setConfirmedHolder] = useState<boolean | null>(null);
+  // Stable confirmed balance state initialized from global cache if matching address
+  const [confirmedBalance, setConfirmedBalance] = useState<bigint | null>(() => {
+    if (address && globalConfirmedAddress === address.toLowerCase()) {
+      return globalConfirmedBalance;
+    }
+    return null;
+  });
+  const [confirmedHolder, setConfirmedHolder] = useState<boolean | null>(() => {
+    if (address && globalConfirmedAddress === address.toLowerCase()) {
+      return globalConfirmedHolder;
+    }
+    return null;
+  });
 
   // REAL TOKEN MODE: Contract balance check
   const isRealMode = !HOLDER_TEST_MODE;
@@ -67,22 +82,41 @@ export function useHolderStatus(): HolderStatusResult {
       enabled: isRealMode && isContractConfigured && Boolean(address) && isConnected,
       refetchInterval: 15000, // Stable auto-check every 15s
       refetchOnWindowFocus: false, // Prevent redundant refetch loops on tab focus
+      staleTime: 10000, // Re-use cached result across route transitions
     },
   });
 
   // Retain confirmed balance state upon successful onchain response
   useEffect(() => {
     if (typeof contractBalance === 'bigint') {
+      const addrLower = address ? address.toLowerCase() : null;
+      globalConfirmedAddress = addrLower;
+      globalConfirmedBalance = contractBalance;
+      globalConfirmedHolder = contractBalance > 0n;
       setConfirmedBalance(contractBalance);
       setConfirmedHolder(contractBalance > 0n);
     }
-  }, [contractBalance]);
+  }, [contractBalance, address]);
 
-  // Reset confirmed balance when wallet address changes or disconnects
+  // Reset confirmed balance ONLY when wallet address explicitly changes to a different wallet or disconnects
   useEffect(() => {
-    setConfirmedBalance(null);
-    setConfirmedHolder(null);
-  }, [address]);
+    if (address) {
+      const addrLower = address.toLowerCase();
+      if (globalConfirmedAddress && globalConfirmedAddress !== addrLower) {
+        globalConfirmedAddress = null;
+        globalConfirmedBalance = null;
+        globalConfirmedHolder = null;
+        setConfirmedBalance(null);
+        setConfirmedHolder(null);
+      }
+    } else if (!isConnected) {
+      globalConfirmedAddress = null;
+      globalConfirmedBalance = null;
+      globalConfirmedHolder = null;
+      setConfirmedBalance(null);
+      setConfirmedHolder(null);
+    }
+  }, [address, isConnected]);
 
   if (!isConnected || !address) {
     return {
