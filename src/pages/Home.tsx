@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GoblinMascot } from '../components/GoblinMascot';
 import { CaveStatus } from '../components/CaveStatus';
 import { ActivityLog } from '../components/ActivityLog';
@@ -20,6 +20,7 @@ export const Home: React.FC<HomeProps> = ({
   isCorrectNetwork,
   activityLogs,
 }) => {
+  const [copiedCa, setCopiedCa] = useState(false);
   return (
     <div className="w-full flex flex-col justify-between min-h-[calc(100vh-65px)] p-4 md:p-8 lg:p-10 font-mono select-none">
       {/* Top Banner alert if wrong network */}
@@ -98,6 +99,26 @@ export const Home: React.FC<HomeProps> = ({
                 >
                   [ READ DOCS ]
                 </TerminalButton>
+              </div>
+
+              {/* TOKEN CA SECTION */}
+              <div className="p-3.5 border border-[#60FF70]/60 bg-[#123B17]/25 box-glow space-y-2 font-mono mt-4">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#60FF70] font-bold tracking-widest">&gt; TOKEN CA</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('0x32cC99E041785f833F72fd5Bca1376fB94959169');
+                      setCopiedCa(true);
+                      setTimeout(() => setCopiedCa(false), 2000);
+                    }}
+                    className="text-xs bg-[#60FF70] text-black px-2.5 py-1 font-bold hover:bg-[#80FF8E] transition-colors cursor-pointer"
+                  >
+                    {copiedCa ? '[ COPIED ]' : '[ COPY CA ]'}
+                  </button>
+                </div>
+                <div className="text-xs text-[#60FF70] font-bold break-all select-all font-mono tracking-wide">
+                  0x32cC99E041785f833F72fd5Bca1376fB94959169
+                </div>
               </div>
             </div>
 

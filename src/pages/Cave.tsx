@@ -37,6 +37,7 @@ export const Cave: React.FC<CaveProps> = ({
   const holderStatus = useHolderStatus();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [copiedCa, setCopiedCa] = useState(false);
 
   const handleActivate = async () => {
     setErrorMsg(null);
@@ -165,6 +166,26 @@ export const Cave: React.FC<CaveProps> = ({
                   <div>&gt; HOLDER REQUIRED</div>
                 </div>
               )}
+            </div>
+
+            {/* TOKEN CA PANEL */}
+            <div className="p-3 bg-[#123B17]/20 border border-[#60FF70]/30 space-y-1.5 text-xs font-mono">
+              <div className="flex justify-between items-center border-b border-[#60FF70]/20 pb-1">
+                <span className="text-[#688D6C] font-bold tracking-widest">&gt; TOKEN CA</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText('0x32cC99E041785f833F72fd5Bca1376fB94959169');
+                    setCopiedCa(true);
+                    setTimeout(() => setCopiedCa(false), 2000);
+                  }}
+                  className="text-[10px] bg-[#60FF70] text-black px-2 py-0.5 font-bold hover:bg-[#80FF8E] transition-colors cursor-pointer"
+                >
+                  {copiedCa ? '[ COPIED ]' : '[ COPY CA ]'}
+                </button>
+              </div>
+              <div className="text-[11px] text-[#60FF70] font-bold break-all select-all font-mono tracking-wide pt-0.5">
+                0x32cC99E041785f833F72fd5Bca1376fB94959169
+              </div>
             </div>
           </div>
         </TerminalWindow>
