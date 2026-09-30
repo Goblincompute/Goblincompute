@@ -174,11 +174,11 @@ export function useHolderStatus(): HolderStatusResult {
       return {
         isHolder: false,
         tokenBalance: null,
-        formattedTokenBalance: '0 GBLC',
+        formattedTokenBalance: 'CHECKING HOLDER STATUS...',
         decimals,
         tier: 'NONE',
         allowance: 0,
-        loading: false,
+        loading: true,
         error: 'NETWORK CHECK FAILED / RETRYING',
         isTestMode: false,
         refetch,
