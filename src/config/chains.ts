@@ -17,12 +17,14 @@ export const robinhoodChain = defineChain({
   rpcUrls: {
     default: {
       http: [
+        'https://robinhood.drpc.org',
         'https://rpc.robinhoodchain.com',
         'https://mainnet-rpc.robinhoodchain.com',
       ],
     },
     public: {
       http: [
+        'https://robinhood.drpc.org',
         'https://rpc.robinhoodchain.com',
         'https://mainnet-rpc.robinhoodchain.com',
       ],
@@ -41,7 +43,7 @@ export const CHAIN_CONFIG = {
   chainId: ROBINHOOD_CHAIN_ID,
   chainName: 'Robinhood Chain Mainnet',
   nativeCurrency: 'ETH',
-  rpcUrl: 'https://rpc.robinhoodchain.com',
+  rpcUrl: 'https://robinhood.drpc.org',
   explorerUrl: 'https://explorer.robinhoodchain.com',
   isFallbackEnabled: true,
 };

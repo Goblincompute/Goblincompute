@@ -1,4 +1,4 @@
-import { createConfig, http } from 'wagmi';
+import { createConfig, http, fallback } from 'wagmi';
 import { mainnet, sepolia, arbitrum, base } from 'wagmi/chains';
 import { injected } from 'wagmi/connectors';
 import { QueryClient } from '@tanstack/react-query';
@@ -19,9 +19,10 @@ export const wagmiConfig = createConfig({
     injected(),
   ],
   transports: {
-    [robinhoodChain.id]: http('https://rpc.robinhoodchain.com', {
-      timeout: 5000,
-    }),
+    [robinhoodChain.id]: fallback([
+      http('https://robinhood.drpc.org', { timeout: 5000 }),
+      http('https://rpc.robinhoodchain.com', { timeout: 5000 }),
+    ]),
     [mainnet.id]: http(),
     [sepolia.id]: http(),
     [arbitrum.id]: http(),
