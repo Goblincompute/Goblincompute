@@ -9,7 +9,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ success: false, error: 'METHOD NOT ALLOWED' });
   }
 
-  const apiKey = process.env.AI_API_KEY;
+  const apiKey =
+    process.env.AI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_AI_API_KEY ||
+    process.env.VITE_AI_API_KEY;
+
   const isConfigured = Boolean(apiKey && apiKey.trim() !== '');
 
   if (!isConfigured) {
@@ -55,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const timeoutId = setTimeout(() => controller.abort(), attemptTimeoutMs);
 
       const apiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
