@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { parseAbi, formatUnits } from 'viem';
 import { ROBINHOOD_CHAIN_ID } from '../config/chains';
@@ -30,6 +31,10 @@ const erc20Abi = parseAbi([
 export function useHolderStatus(): HolderStatusResult {
   const { address, isConnected } = useAccount();
 
+  // Stable confirmed balance state to prevent 0-balance refetch flicker
+  const [confirmedBalance, setConfirmedBalance] = useState<bigint | null>(null);
+  const [confirmedHolder, setConfirmedHolder] = useState<boolean | null>(null);
+
   // REAL TOKEN MODE: Contract balance check
   const isRealMode = !HOLDER_TEST_MODE;
   const isContractConfigured = Boolean(TOKEN_CONFIG.contractAddress && TOKEN_CONFIG.contractAddress.trim() !== '');
@@ -42,6 +47,7 @@ export function useHolderStatus(): HolderStatusResult {
     chainId: ROBINHOOD_CHAIN_ID,
     query: {
       enabled: isRealMode && isContractConfigured,
+      staleTime: 60000,
     },
   });
 
@@ -59,9 +65,24 @@ export function useHolderStatus(): HolderStatusResult {
     chainId: ROBINHOOD_CHAIN_ID,
     query: {
       enabled: isRealMode && isContractConfigured && Boolean(address) && isConnected,
-      refetchInterval: 10000, // Auto recheck every 10s
+      refetchInterval: 15000, // Stable auto-check every 15s
+      refetchOnWindowFocus: false, // Prevent redundant refetch loops on tab focus
     },
   });
+
+  // Retain confirmed balance state upon successful onchain response
+  useEffect(() => {
+    if (typeof contractBalance === 'bigint') {
+      setConfirmedBalance(contractBalance);
+      setConfirmedHolder(contractBalance > 0n);
+    }
+  }, [contractBalance]);
+
+  // Reset confirmed balance when wallet address changes or disconnects
+  useEffect(() => {
+    setConfirmedBalance(null);
+    setConfirmedHolder(null);
+  }, [address]);
 
   if (!isConnected || !address) {
     return {
@@ -88,7 +109,7 @@ export function useHolderStatus(): HolderStatusResult {
     if (isAllowlisted) {
       return {
         isHolder: true,
-        tokenBalance: null, // Do NOT fake token balance in test mode
+        tokenBalance: null,
         formattedTokenBalance: 'TESTER AUTHORIZED',
         decimals: TOKEN_CONFIG.decimals,
         tier: 'BASIC',
@@ -132,11 +153,42 @@ export function useHolderStatus(): HolderStatusResult {
     };
   }
 
-  if (isContractLoading) {
+  // Initial Load state (before first confirmed balance is stored)
+  if (confirmedBalance === null) {
+    if (isContractLoading) {
+      return {
+        isHolder: false,
+        tokenBalance: null,
+        formattedTokenBalance: 'CHECKING HOLDER STATUS...',
+        decimals,
+        tier: 'NONE',
+        allowance: 0,
+        loading: true,
+        error: null,
+        isTestMode: false,
+        refetch,
+      };
+    }
+
+    if (isContractError) {
+      return {
+        isHolder: false,
+        tokenBalance: null,
+        formattedTokenBalance: '0 GBLC',
+        decimals,
+        tier: 'NONE',
+        allowance: 0,
+        loading: false,
+        error: 'NETWORK CHECK FAILED / RETRYING',
+        isTestMode: false,
+        refetch,
+      };
+    }
+
     return {
       isHolder: false,
       tokenBalance: null,
-      formattedTokenBalance: 'READING ONCHAIN...',
+      formattedTokenBalance: 'CHECKING HOLDER STATUS...',
       decimals,
       tier: 'NONE',
       allowance: 0,
@@ -147,24 +199,9 @@ export function useHolderStatus(): HolderStatusResult {
     };
   }
 
-  if (isContractError || contractBalance === undefined) {
-    return {
-      isHolder: false,
-      tokenBalance: 0n,
-      formattedTokenBalance: '0 GBLC',
-      decimals,
-      tier: 'NONE',
-      allowance: 0,
-      loading: false,
-      error: 'UNABLE TO READ ONCHAIN BALANCE',
-      isTestMode: false,
-      refetch,
-    };
-  }
-
-  const balance = contractBalance;
-  // LAUNCH ACCESS RULE: tokenBalance > 0 grants holder access (100 CR)
-  const isHolder = balance > 0n;
+  // Confirmed balance exists: retain last valid balance across background refetches and RPC glitches
+  const balance = confirmedBalance;
+  const isHolder = confirmedHolder ?? (balance > 0n);
   const tier = isHolder ? 'BASIC' : 'NONE';
   const allowance = isHolder ? HOLDER_TIERS.BASIC.allowance : 0;
   const formattedTokenBalance = `${parseFloat(formatUnits(balance, decimals)).toLocaleString('en-US', { maximumFractionDigits: 4 })} GBLC`;
@@ -177,7 +214,7 @@ export function useHolderStatus(): HolderStatusResult {
     tier,
     allowance,
     loading: false,
-    error: null,
+    error: isContractError ? 'NETWORK CHECK FAILED / RETRYING' : null,
     isTestMode: false,
     refetch,
   };
