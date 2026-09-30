@@ -26,26 +26,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, error: 'INVALID_PROMPT' });
   }
 
-  const candidateModels = [
-    'gemini-3.5-flash-lite',
-    'gemini-3.1-flash-lite',
-    'gemini-3.6-flash',
-    'gemma-4-26b-a4b-it',
-    'gemini-3.8-flash',
-    'gemini-3.7-flash',
+  // Model fallback architecture: Primary -> Fallback 1 -> Fallback 2
+  const models = [
+    'gemini-3.5-flash-lite', // Primary model (fastest, high availability)
+    'gemini-3.5-flash',      // Fallback 1
+    'gemini-3.6-flash',      // Fallback 2
   ];
 
-  const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+  const startTime = Date.now();
+  const MAX_TOTAL_BACKEND_MS = 22000; // 22s max backend execution
+  const MAX_ATTEMPT_MS = 10000;       // 10s max per model attempt
 
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const model = candidateModels[attempt % candidateModels.length];
-    if (attempt > 0) {
-      await sleep(400);
+  let lastStatus = 503;
+  let lastErrorDetail = 'AI_SERVICE_UNAVAILABLE';
+
+  for (const model of models) {
+    // Enforce 22s total backend time budget
+    const elapsed = Date.now() - startTime;
+    if (elapsed >= MAX_TOTAL_BACKEND_MS) {
+      break;
     }
+
+    const remainingBudget = MAX_TOTAL_BACKEND_MS - elapsed;
+    const attemptTimeoutMs = Math.min(MAX_ATTEMPT_MS, remainingBudget);
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), attemptTimeoutMs);
 
       const apiResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -72,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (apiResponse.ok) {
         const data = await apiResponse.json();
         const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (resultText) {
+        if (resultText && resultText.trim()) {
           return res.status(200).json({
             success: true,
             response: resultText.trim(),
@@ -80,13 +87,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
         }
       }
-    } catch {
-      // Continue loop to next candidate
+
+      lastStatus = apiResponse.status;
+      const errData = await apiResponse.json().catch(() => ({}));
+      lastErrorDetail = errData.error?.message || `HTTP ${apiResponse.status}`;
+
+      // Retry only on 429, 500, 502, 503
+      const retryableStatuses = [429, 500, 502, 503];
+      if (!retryableStatuses.includes(apiResponse.status)) {
+        break;
+      }
+    } catch (err: unknown) {
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      lastStatus = isAbort ? 504 : 503;
+      lastErrorDetail = isAbort ? 'TIMEOUT' : 'NETWORK_ERROR';
     }
   }
 
   return res.status(503).json({
     success: false,
     error: 'AI_SERVICE_UNAVAILABLE',
+    detail: lastErrorDetail,
+    lastStatus,
   });
 }
